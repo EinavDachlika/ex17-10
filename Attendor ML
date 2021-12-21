@@ -1,0 +1,65 @@
+
+#Import Pandas
+import pandas as pd
+
+#Load csv
+import os
+
+os.chdir("C:\\Users\einav\Desktop\לימודים\שנה ד\טכנולוגיות אינטרנט מתקדמות\project")
+events_data = pd.read_csv('story.csv', low_memory=False, encoding = "ISO-8859-1")
+
+#print(events_data.head())
+
+#Import TfIdfVectorizer from scikit-learn
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+#Define a TF-IDF Vectorizer Object. Remove all english stop words such as 'the', 'a'
+tfidf = TfidfVectorizer(stop_words='english')
+
+#Replace NaN with an empty string
+events_data['Description'] = events_data['Description'].fillna('')
+
+#Construct the required TF-IDF matrix by fitting and transforming the data
+tfidf_matrix = tfidf.fit_transform(events_data['Description'])
+
+#Output the shape of tfidf_matrix
+tfidf_matrix.shape
+
+#print(tfidf_matrix.shape)
+
+#print(tfidf.get_feature_names_out()[:1])
+
+# Import linear_kernel
+from sklearn.metrics.pairwise import linear_kernel
+
+# Compute the cosine similarity matrix
+cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
+
+#print(cosine_sim[0])
+
+#Construct a reverse map of indices and event ids
+indices = pd.Series(events_data.index, index=events_data['Events']).drop_duplicates()
+
+# Function that takes in Event id as input and outputs most similar Events
+def get_recommendations(Events, cosine_sim=cosine_sim):
+    # Get the index of the movie that matches the title
+    idx = indices[Events]
+
+    # Get the pairwsie similarity scores of all Events with that Event
+    sim_scores = list(enumerate(cosine_sim[idx]))
+
+    # Sort the Events based on the similarity scores
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+
+    # Get the scores of the 10 most similar events
+    sim_scores = sim_scores[1:6]
+
+    # Get the movie indices
+    events_indices = [i[0] for i in sim_scores]
+
+    # Return the top 5 most similar events
+    return events_data['Events'].iloc[events_indices]
+
+print(get_recommendations('E'))
+
+print(get_recommendations('C'))
